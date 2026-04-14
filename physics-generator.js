@@ -21,11 +21,15 @@ class PhysicsGenerator {
         
         this.LOW_HP_TCURVE = [[0,0.80000],[30,0.9500],[60,1.0000],[90,1.0000],[120,0.996],[150,0.990],[180,0.984],[210,0.978],[240,0.977],[270,0.976],[300,0.975],[330,0.950],[360,0.925],[390,0.900],[420,0.800]];
         
-        this.LOW_HP_WEAR_HARD = [[0,100],[0.1,100],[0.2,100],[0.3,100],[0.5,99.5],[1.0,99],[1.5,98.5],[4,98],[10,97],[11,96]];
+        // Low HP wear curves - onset delayed so tires don't degrade before heating up
+        // Hard: virtually no wear
+        this.LOW_HP_WEAR_HARD = [[0,100],[5,100],[10,100],[20,100],[30,99.5],[40,99],[50,98.5],[60,98],[80,97],[100,96]];
         
-        this.LOW_HP_WEAR_MEDIUM = [[0,100],[0.25,100],[0.5,100],[0.75,100],[1.25,99.5],[2.5,99],[3.75,98.5],[10,98],[25,95],[35,90],[50,80]];
+        // Medium: gradual, feel it over a long session
+        this.LOW_HP_WEAR_MEDIUM = [[0,100],[3,100],[6,100],[10,100],[15,99.5],[20,99],[30,98],[40,96],[50,93],[60,88],[75,80]];
         
-        this.LOW_HP_WEAR_SOFT = [[0,100],[0.005,95],[0.008,98],[0.015,100],[1.5,100],[3,99.5],[6,99],[9,98.5],[12,80],[15,70],[18,65],[21,60],[24,50]];
+        // Soft: noticeable after several laps, real degradation by end of session
+        this.LOW_HP_WEAR_SOFT = [[0,100],[2,100],[4,100],[6,99.5],[10,99],[15,97],[20,93],[25,87],[30,80],[35,72],[40,65]];
     }
     
     isLowHPTire(tire) {
@@ -502,7 +506,7 @@ DCAMBER_0=1
 DCAMBER_1=-13
 FRICTION_LIMIT_ANGLE=8.31
 XMU=0.27
-PRESSURE_STATIC=32
+PRESSURE_STATIC=24
 PRESSURE_SPRING_GAIN=5112
 PRESSURE_FLEX_GAIN=0.035
 PRESSURE_RR_GAIN=0.6
@@ -546,7 +550,7 @@ DCAMBER_0=1
 DCAMBER_1=-13
 FRICTION_LIMIT_ANGLE=8.31
 XMU=0.27
-PRESSURE_STATIC=32
+PRESSURE_STATIC=16
 PRESSURE_SPRING_GAIN=5112
 PRESSURE_FLEX_GAIN=0.035
 PRESSURE_RR_GAIN=0.6

@@ -191,16 +191,20 @@ dropZone.addEventListener('drop', async (e) => {
 async function searchDirectoryForFiles(dirEntry) {
     return new Promise((resolve) => {
         const reader = dirEntry.createReader();
+        console.log(`[Search] Reading directory: ${dirEntry.name}`);
         reader.readEntries(async (entries) => {
+            console.log(`[Search] Found ${entries.length} entries in ${dirEntry.name}:`);
             let foundAny = false;
             
             // Check this directory for car.ini and tyres.ini
             for (const entry of entries) {
+                console.log(`[Search]   ${entry.isFile ? 'FILE' : 'DIR'}: ${entry.name}`);
                 if (entry.isFile && entry.name.toLowerCase() === 'car.ini') {
                     await new Promise(r => entry.file((file) => { handleFile(file); r(); }));
                     foundAny = true;
                 }
                 if (entry.isFile && entry.name.toLowerCase() === 'tyres.ini') {
+                    console.log('[Search] *** Found tyres.ini! ***');
                     await new Promise(r => entry.file((file) => { handleFile(file); r(); }));
                     foundAny = true;
                 }
@@ -213,7 +217,11 @@ async function searchDirectoryForFiles(dirEntry) {
                     if (found) foundAny = true;
                 }
             }
+            console.log(`[Search] Done with ${dirEntry.name}, foundAny=${foundAny}`);
             resolve(foundAny);
+        }, (err) => {
+            console.error(`[Search] readEntries error for ${dirEntry.name}:`, err);
+            resolve(false);
         });
     });
 }

@@ -191,15 +191,24 @@ dropZone.addEventListener('drop', async (e) => {
 function readAllEntries(reader) {
     return new Promise((resolve) => {
         const allEntries = [];
+        let batchNum = 0;
         function readBatch() {
-            reader.readEntries((entries) => {
-                if (entries.length === 0) {
+            reader.readEntries((batch) => {
+                batchNum++;
+                console.log(`[ReadAll] Batch ${batchNum}: got ${batch.length} entries`);
+                if (batch.length === 0) {
+                    console.log(`[ReadAll] All done, total: ${allEntries.length}`);
                     resolve(allEntries);
                 } else {
-                    allEntries.push(...entries);
-                    readBatch(); // Keep reading until empty
+                    for (let i = 0; i < batch.length; i++) {
+                        allEntries.push(batch[i]);
+                    }
+                    readBatch();
                 }
-            }, () => resolve(allEntries));
+            }, (err) => {
+                console.error('[ReadAll] Error:', err);
+                resolve(allEntries);
+            });
         }
         readBatch();
     });
@@ -209,9 +218,11 @@ function readAllEntries(reader) {
 async function searchDirectoryForFiles(dirEntry) {
     const reader = dirEntry.createReader();
     const entries = await readAllEntries(reader);
-    console.log(`[Search] ${dirEntry.name}: ${entries.length} total entries`);
+    console.log(`[Search] Scanning ${dirEntry.name}: ${entries.length} entries`);
     
     let foundAny = false;
+    const fileNames = entries.filter(e => e.isFile).map(e => e.name);
+    console.log(`[Search] Looking for tyres.ini in: ${fileNames.filter(n => n.toLowerCase().startsWith('t')).join(', ')}`);
     
     for (const entry of entries) {
         if (entry.isFile && entry.name.toLowerCase() === 'car.ini') {
@@ -219,7 +230,7 @@ async function searchDirectoryForFiles(dirEntry) {
             foundAny = true;
         }
         if (entry.isFile && entry.name.toLowerCase() === 'tyres.ini') {
-            console.log('[Search] *** Found tyres.ini! ***');
+            console.log('[Search] *** FOUND tyres.ini! ***');
             await new Promise(r => entry.file((file) => { handleFile(file); r(); }));
             foundAny = true;
         }

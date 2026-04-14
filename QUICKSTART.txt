@@ -1,0 +1,60 @@
+==================================================
+AC TIRE CREATOR - QUICK START
+==================================================
+
+LOCATION:
+/home/paddy-bot/.openclaw/workspace/tyre-creator/app/
+
+HOW TO USE:
+1. Open index.html in any web browser (Chrome, Firefox, Edge, Safari)
+2. Drag & drop your car's car.ini file (or ZIP containing it)
+3. Select tire widths (front and rear)
+4. Choose tire pack (Street, Competition, or both)
+5. Click "Generate Tire Pack"
+6. Extract the downloaded ZIP to your AC car's data folder
+
+FILES INCLUDED:
+- index.html         → Main application
+- style.css          → Dark theme styling  
+- tire-data.js       → 17 tire compound definitions
+- physics-generator.js → Physics calculation engine
+- app.js             → UI logic and ZIP generation
+- README.md          → Full documentation
+- IMPLEMENTATION.md  → Technical details
+
+TIRE PACKS:
+Street (10 tires):
+  • Kenda Vezda KR20A
+  • Accelera 351 Sport GD
+  • Accelera 651 Sport
+  • GT Radial Champiro SX2 RS
+  • Valino Pergea 08RS
+  • Nankang NS-2R
+  • Federal 595RS-RR
+  • Nitto NT555RII
+  • Toyo Proxes R888R
+  • Ironman iMove Gen 2
+
+Competition (7 tires):
+  • GT Radial SX2 RS (Pro)
+  • Kenda Competition
+  • Nitto NT555 G2
+  • Kumho Ecsta V730
+  • Falken Azenis RT615K+
+  • Federal RS-Pro
+  • Bridgestone Potenza RE-71RS
+
+FEATURES:
+✓ VERSION=11 extended physics
+✓ Realistic tire differentiation
+✓ Car mass scaling from car.ini
+✓ Width customization (185-305mm)
+✓ Single tire or full pack modes
+✓ Unique physics per compound
+✓ Complete thermal modeling
+✓ Realistic wear curves
+
+NO INSTALLATION REQUIRED
+Just open index.html!
+
+==================================================

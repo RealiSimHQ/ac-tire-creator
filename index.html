@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AC Tire Creator</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>AC Tire Creator</h1>
+        
+        <!-- Drag & Drop Zone -->
+        <div id="dropZone" class="drop-zone">
+            <p>Drag & drop car folder, data folder, or ZIP file here</p>
+            <p class="small">Or click to select car.ini file</p>
+            <input type="file" id="fileInput" accept=".ini,.zip" style="display: none;">
+        </div>
+        
+        <div id="carInfo" class="car-info" style="display: none;">
+            <p><strong>Detected Weight:</strong> <span id="carWeight">-</span> kg</p>
+        </div>
+        
+        <!-- Tire Size Selection -->
+        <div class="section">
+            <h2>Tire Size</h2>
+            <div class="row">
+                <div class="col">
+                    <label>Front:</label>
+                    <div class="tire-size-row">
+                        <select id="frontWidth" title="Width (mm)"></select>
+                        <span class="separator">/</span>
+                        <select id="frontAspect" title="Aspect Ratio"></select>
+                        <span class="separator">R</span>
+                        <select id="frontRim" title="Rim Diameter (inches)"></select>
+                    </div>
+                    <div class="tire-size-preview" id="frontSizePreview">255/35R18</div>
+                </div>
+                <div class="col">
+                    <label>Rear:</label>
+                    <div class="tire-size-row">
+                        <select id="rearWidth" title="Width (mm)"></select>
+                        <span class="separator">/</span>
+                        <select id="rearAspect" title="Aspect Ratio"></select>
+                        <span class="separator">R</span>
+                        <select id="rearRim" title="Rim Diameter (inches)"></select>
+                    </div>
+                    <div class="tire-size-preview" id="rearSizePreview">305/35R18</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tire Pack Selection -->
+        <div class="section">
+            <h2>Tire Packs</h2>
+            <div class="checkbox-group">
+                <label>
+                    <input type="checkbox" id="lowHPPack">
+                    Low HP Tires (3 compounds)
+                </label>
+                <label>
+                    <input type="checkbox" id="streetPack" checked>
+                    Street Tires (10 compounds)
+                </label>
+                <label>
+                    <input type="checkbox" id="compPack">
+                    Competition Tires (7 compounds)
+                </label>
+            </div>
+        </div>
+        
+        <!-- Single Tire Selection -->
+        <div class="section">
+            <label>
+                <input type="checkbox" id="singleTireOnly">
+                Select single tireset only
+            </label>
+            <div id="singleTireSelect" style="display: none; margin-top: 10px;">
+                <label for="singleTire">Select tire:</label>
+                <select id="singleTire">
+                    <!-- Populated by JS based on pack selection -->
+                </select>
+            </div>
+        </div>
+        
+        <!-- Default Tire Selection -->
+        <div class="section">
+            <label for="defaultTire">Default tyre on launch:</label>
+            <select id="defaultTire">
+                <!-- Populated by JS based on included tires -->
+            </select>
+        </div>
+        
+        <!-- Generate Button -->
+        <div class="section">
+            <button id="generateBtn" class="generate-btn">Generate Tire Pack</button>
+        </div>
+        
+        <div id="status" class="status"></div>
+    </div>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="tire-data.js"></script>
+    <script src="physics-generator.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>

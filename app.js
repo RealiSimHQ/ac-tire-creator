@@ -150,30 +150,39 @@ dropZone.addEventListener('drop', async (e) => {
     e.preventDefault();
     dropZone.classList.remove('dragover');
     
+    console.log('[Drop] Drop event fired, items:', e.dataTransfer.items?.length, 'files:', e.dataTransfer.files?.length);
+    
     // Handle folder drops via DataTransferItem API
     const items = e.dataTransfer.items;
+    let found = false;
+    
     if (items && items.length > 0) {
-        let found = false;
         for (const item of items) {
+            console.log('[Drop] Item kind:', item.kind, 'type:', item.type);
             if (item.webkitGetAsEntry) {
                 const entry = item.webkitGetAsEntry();
+                console.log('[Drop] Entry:', entry?.name, 'isDir:', entry?.isDirectory, 'isFile:', entry?.isFile);
                 if (entry && entry.isDirectory) {
                     found = await searchDirectoryForFiles(entry);
-                    if (found) break;
+                } else if (entry && entry.isFile) {
+                    // Single file dropped
+                    const file = item.getAsFile();
+                    if (file) {
+                        await handleFile(file);
+                        found = true;
+                    }
                 }
             }
         }
-        if (!found) {
-            // Fall back to file handling
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFile(files[0]);
-            }
-        }
-    } else {
+    }
+    
+    if (!found) {
+        // Fall back to files list
         const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            handleFile(files[0]);
+        console.log('[Drop] Fallback to files list, count:', files?.length);
+        for (let i = 0; i < files.length; i++) {
+            console.log('[Drop] File:', files[i].name, 'type:', files[i].type);
+            await handleFile(files[i]);
         }
     }
 });

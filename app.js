@@ -158,7 +158,7 @@ dropZone.addEventListener('drop', async (e) => {
             if (item.webkitGetAsEntry) {
                 const entry = item.webkitGetAsEntry();
                 if (entry && entry.isDirectory) {
-                    found = await searchDirectoryForCarINI(entry);
+                    found = await searchDirectoryForFiles(entry);
                     if (found) break;
                 }
             }
@@ -178,29 +178,35 @@ dropZone.addEventListener('drop', async (e) => {
     }
 });
 
-// Recursively search a dropped directory for car.ini
-async function searchDirectoryForCarINI(dirEntry) {
+// Recursively search a dropped directory for car.ini and tyres.ini
+async function searchDirectoryForFiles(dirEntry) {
     return new Promise((resolve) => {
         const reader = dirEntry.createReader();
         reader.readEntries(async (entries) => {
-            // First check this directory for car.ini
+            let foundAny = false;
+            
+            // Check this directory for car.ini and tyres.ini
             for (const entry of entries) {
                 if (entry.isFile && entry.name.toLowerCase() === 'car.ini') {
-                    entry.file((file) => {
-                        handleFile(file);
-                        resolve(true);
-                    });
-                    return;
+                    await new Promise(r => entry.file((file) => { handleFile(file); r(); }));
+                    foundAny = true;
+                }
+                if (entry.isFile && entry.name.toLowerCase() === 'tyres.ini') {
+                    await new Promise(r => entry.file((file) => { handleFile(file); r(); }));
+                    foundAny = true;
                 }
             }
+            
+            if (foundAny) { resolve(true); return; }
+            
             // Then check subdirectories (look in 'data' folder etc.)
             for (const entry of entries) {
                 if (entry.isDirectory) {
-                    const found = await searchDirectoryForCarINI(entry);
-                    if (found) { resolve(true); return; }
+                    const found = await searchDirectoryForFiles(entry);
+                    if (found) foundAny = true;
                 }
             }
-            resolve(false);
+            resolve(foundAny);
         });
     });
 }
@@ -214,26 +220,48 @@ fileInput.addEventListener('change', (e) => {
 // Handle file upload
 async function handleFile(file) {
     try {
-        if (file.name.endsWith('.ini')) {
+        if (file.name.toLowerCase() === 'car.ini') {
             const text = await file.text();
             parseCarINI(text);
+        } else if (file.name.toLowerCase() === 'tyres.ini') {
+            const text = await file.text();
+            parseTyresINI(text);
+        } else if (file.name.endsWith('.ini')) {
+            // Generic .ini - try both parsers
+            const text = await file.text();
+            if (text.includes('TOTALMASS')) {
+                parseCarINI(text);
+            } else if (text.includes('[FRONT]')) {
+                parseTyresINI(text);
+            } else {
+                showStatus('Unrecognized .ini file', 'error');
+            }
         } else if (file.name.endsWith('.zip')) {
             const zip = await JSZip.loadAsync(file);
-            // Look for car.ini in the zip
-            let carINIFound = false;
+            let found = false;
+            // Look for car.ini
             for (const [path, zipEntry] of Object.entries(zip.files)) {
-                if (path.endsWith('car.ini') || path === 'car.ini') {
+                if (path.toLowerCase().endsWith('car.ini')) {
                     const text = await zipEntry.async('text');
                     parseCarINI(text);
-                    carINIFound = true;
+                    found = true;
                     break;
                 }
             }
-            if (!carINIFound) {
-                showStatus('No car.ini found in ZIP file', 'error');
+            // Also look for tyres.ini
+            for (const [path, zipEntry] of Object.entries(zip.files)) {
+                if (path.toLowerCase().endsWith('tyres.ini')) {
+                    const text = await zipEntry.async('text');
+                    parseTyresINI(text);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                showStatus('No car.ini or tyres.ini found in ZIP file', 'error');
             }
         } else {
-            showStatus('Please select a car.ini file or ZIP containing car.ini', 'error');
+            showStatus('Please drop a car folder, data folder, or ZIP file', 'error');
         }
     } catch (error) {
         showStatus('Error reading file: ' + error.message, 'error');
@@ -261,6 +289,85 @@ function parseCarINI(text) {
     }
     
     showStatus('TOTALMASS not found in car.ini, using default 1340kg', 'info');
+}
+
+// Parse tyres.ini to extract tire sizes from first FRONT and REAR sections
+function parseTyresINI(text) {
+    const lines = text.split('\n');
+    let currentSection = null;
+    let frontWidth = null, frontRadius = null, frontRimRadius = null;
+    let rearWidth = null, rearRadius = null, rearRimRadius = null;
+
+    for (const line of lines) {
+        const trimmed = line.trim().split(';')[0].trim();
+        
+        // Match [FRONT] but not [FRONT_1], [FRONT_2] etc.
+        if (/^\[FRONT\]$/i.test(trimmed)) { currentSection = 'front'; continue; }
+        if (/^\[REAR\]$/i.test(trimmed)) { currentSection = 'rear'; continue; }
+        if (/^\[/.test(trimmed) && !/^\[FRONT\]$/i.test(trimmed) && !/^\[REAR\]$/i.test(trimmed)) {
+            currentSection = null; continue;
+        }
+
+        if (!currentSection) continue;
+        const [key, val] = trimmed.split('=').map(s => s.trim());
+        if (!key || !val) continue;
+
+        if (currentSection === 'front') {
+            if (key === 'WIDTH') frontWidth = parseFloat(val);
+            if (key === 'RADIUS') frontRadius = parseFloat(val);
+            if (key === 'RIM_RADIUS') frontRimRadius = parseFloat(val);
+        }
+        if (currentSection === 'rear') {
+            if (key === 'WIDTH') rearWidth = parseFloat(val);
+            if (key === 'RADIUS') rearRadius = parseFloat(val);
+            if (key === 'RIM_RADIUS') rearRimRadius = parseFloat(val);
+        }
+    }
+
+    // Reverse-calculate tire size from WIDTH, RADIUS, RIM_RADIUS
+    let detected = [];
+    if (frontWidth && frontRadius && frontRimRadius) {
+        const widthMM = Math.round(frontWidth * 1000);
+        const rimInches = Math.round((frontRimRadius * 2 * 1000) / 25.4);
+        const sidewallMM = (frontRadius - frontRimRadius) * 1000;
+        const aspect = Math.round((sidewallMM / widthMM) * 100);
+        
+        // Snap to nearest valid dropdown values
+        const snappedWidth = snapToNearest(widthMM, 5, 185, 315);
+        const snappedAspect = snapToNearest(aspect, 5, 25, 65);
+        const snappedRim = snapToNearest(rimInches, 1, 15, 20);
+        
+        frontWidthSelect.value = snappedWidth;
+        frontAspectSelect.value = snappedAspect;
+        frontRimSelect.value = snappedRim;
+        detected.push(`Front: ${snappedWidth}/${snappedAspect}R${snappedRim}`);
+    }
+    if (rearWidth && rearRadius && rearRimRadius) {
+        const widthMM = Math.round(rearWidth * 1000);
+        const rimInches = Math.round((rearRimRadius * 2 * 1000) / 25.4);
+        const sidewallMM = (rearRadius - rearRimRadius) * 1000;
+        const aspect = Math.round((sidewallMM / widthMM) * 100);
+        
+        const snappedWidth = snapToNearest(widthMM, 5, 185, 315);
+        const snappedAspect = snapToNearest(aspect, 5, 25, 65);
+        const snappedRim = snapToNearest(rimInches, 1, 15, 20);
+        
+        rearWidthSelect.value = snappedWidth;
+        rearAspectSelect.value = snappedAspect;
+        rearRimSelect.value = snappedRim;
+        detected.push(`Rear: ${snappedWidth}/${snappedAspect}R${snappedRim}`);
+    }
+    
+    if (detected.length > 0) {
+        updateSizePreview();
+        showStatus('Tire sizes detected: ' + detected.join(', '), 'success');
+    }
+}
+
+// Snap a value to the nearest step within min/max
+function snapToNearest(val, step, min, max) {
+    val = Math.max(min, Math.min(max, val));
+    return Math.round(val / step) * step;
 }
 
 // Pack checkbox handlers

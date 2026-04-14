@@ -296,12 +296,13 @@ function parseTyresINI(text) {
     let frontWidth = null, frontRadius = null, frontRimRadius = null;
     let rearWidth = null, rearRadius = null, rearRimRadius = null;
 
+    console.log(`[TyreDetect] Parsing tyres.ini (${lines.length} lines)`);
     for (const line of lines) {
         const trimmed = line.trim().split(';')[0].trim();
         
         // Match [FRONT] but not [FRONT_1], [FRONT_2] etc.
-        if (/^\[FRONT\]$/i.test(trimmed)) { currentSection = 'front'; continue; }
-        if (/^\[REAR\]$/i.test(trimmed)) { currentSection = 'rear'; continue; }
+        if (/^\[FRONT\]$/i.test(trimmed)) { currentSection = 'front'; console.log('[TyreDetect] Found [FRONT]'); continue; }
+        if (/^\[REAR\]$/i.test(trimmed)) { currentSection = 'rear'; console.log('[TyreDetect] Found [REAR]'); continue; }
         if (/^\[/.test(trimmed) && !/^\[FRONT\]$/i.test(trimmed) && !/^\[REAR\]$/i.test(trimmed)) {
             currentSection = null; continue;
         }
@@ -330,10 +331,11 @@ function parseTyresINI(text) {
         const sidewallMM = (frontRadius - frontRimRadius) * 1000;
         const aspect = Math.round((sidewallMM / widthMM) * 100);
         
-        // Snap to nearest valid dropdown values
         const snappedWidth = snapToNearest(widthMM, 5, 185, 315);
         const snappedAspect = snapToNearest(aspect, 5, 25, 65);
         const snappedRim = snapToNearest(rimInches, 1, 15, 20);
+        
+        console.log(`[TyreDetect] Front raw: W=${frontWidth} R=${frontRadius} RR=${frontRimRadius} → ${widthMM}mm rim${rimInches}" aspect${aspect} → snapped ${snappedWidth}/${snappedAspect}R${snappedRim}`);
         
         frontWidthSelect.value = snappedWidth;
         frontAspectSelect.value = snappedAspect;
@@ -349,6 +351,8 @@ function parseTyresINI(text) {
         const snappedWidth = snapToNearest(widthMM, 5, 185, 315);
         const snappedAspect = snapToNearest(aspect, 5, 25, 65);
         const snappedRim = snapToNearest(rimInches, 1, 15, 20);
+        
+        console.log(`[TyreDetect] Rear raw: W=${rearWidth} R=${rearRadius} RR=${rearRimRadius} → ${widthMM}mm rim${rimInches}" aspect${aspect} → snapped ${snappedWidth}/${snappedAspect}R${snappedRim}`);
         
         rearWidthSelect.value = snappedWidth;
         rearAspectSelect.value = snappedAspect;

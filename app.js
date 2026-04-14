@@ -197,9 +197,7 @@ async function searchDirectoryForFiles(dirEntry) {
                 }
             }
             
-            if (foundAny) { resolve(true); return; }
-            
-            // Then check subdirectories (look in 'data' folder etc.)
+            // ALWAYS check subdirectories — car.ini may be at root, tyres.ini in data/
             for (const entry of entries) {
                 if (entry.isDirectory) {
                     const found = await searchDirectoryForFiles(entry);

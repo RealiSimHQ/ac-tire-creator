@@ -187,43 +187,53 @@ dropZone.addEventListener('drop', async (e) => {
     }
 });
 
+// Read ALL entries from a directory (readEntries returns batches of ~100)
+function readAllEntries(reader) {
+    return new Promise((resolve) => {
+        const allEntries = [];
+        function readBatch() {
+            reader.readEntries((entries) => {
+                if (entries.length === 0) {
+                    resolve(allEntries);
+                } else {
+                    allEntries.push(...entries);
+                    readBatch(); // Keep reading until empty
+                }
+            }, () => resolve(allEntries));
+        }
+        readBatch();
+    });
+}
+
 // Recursively search a dropped directory for car.ini and tyres.ini
 async function searchDirectoryForFiles(dirEntry) {
-    return new Promise((resolve) => {
-        const reader = dirEntry.createReader();
-        console.log(`[Search] Reading directory: ${dirEntry.name}`);
-        reader.readEntries(async (entries) => {
-            console.log(`[Search] Found ${entries.length} entries in ${dirEntry.name}:`);
-            let foundAny = false;
-            
-            // Check this directory for car.ini and tyres.ini
-            for (const entry of entries) {
-                console.log(`[Search]   ${entry.isFile ? 'FILE' : 'DIR'}: ${entry.name}`);
-                if (entry.isFile && entry.name.toLowerCase() === 'car.ini') {
-                    await new Promise(r => entry.file((file) => { handleFile(file); r(); }));
-                    foundAny = true;
-                }
-                if (entry.isFile && entry.name.toLowerCase() === 'tyres.ini') {
-                    console.log('[Search] *** Found tyres.ini! ***');
-                    await new Promise(r => entry.file((file) => { handleFile(file); r(); }));
-                    foundAny = true;
-                }
-            }
-            
-            // ALWAYS check subdirectories — car.ini may be at root, tyres.ini in data/
-            for (const entry of entries) {
-                if (entry.isDirectory) {
-                    const found = await searchDirectoryForFiles(entry);
-                    if (found) foundAny = true;
-                }
-            }
-            console.log(`[Search] Done with ${dirEntry.name}, foundAny=${foundAny}`);
-            resolve(foundAny);
-        }, (err) => {
-            console.error(`[Search] readEntries error for ${dirEntry.name}:`, err);
-            resolve(false);
-        });
-    });
+    const reader = dirEntry.createReader();
+    const entries = await readAllEntries(reader);
+    console.log(`[Search] ${dirEntry.name}: ${entries.length} total entries`);
+    
+    let foundAny = false;
+    
+    for (const entry of entries) {
+        if (entry.isFile && entry.name.toLowerCase() === 'car.ini') {
+            await new Promise(r => entry.file((file) => { handleFile(file); r(); }));
+            foundAny = true;
+        }
+        if (entry.isFile && entry.name.toLowerCase() === 'tyres.ini') {
+            console.log('[Search] *** Found tyres.ini! ***');
+            await new Promise(r => entry.file((file) => { handleFile(file); r(); }));
+            foundAny = true;
+        }
+    }
+    
+    // Check subdirectories
+    for (const entry of entries) {
+        if (entry.isDirectory) {
+            const found = await searchDirectoryForFiles(entry);
+            if (found) foundAny = true;
+        }
+    }
+    
+    return foundAny;
 }
 
 fileInput.addEventListener('change', (e) => {
